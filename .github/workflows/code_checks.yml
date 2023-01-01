@@ -1,0 +1,61 @@
+---
+name: "Code checks"
+on:
+  push:
+    branches:
+      - main
+      - maintenance/*
+    tags:
+      - "v*.*.*"
+  pull_request:
+    branches:
+      - main
+      - maintenance/*
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - "**.png"
+      - "**.gif"
+      - "**.svg"
+      - "**.jpeg"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}-checks
+  cancel-in-progress: true
+
+env:
+  PIP_CONFIG_FILE: /dev/null
+
+jobs:
+  root_checks:
+    name: Root checks
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v3
+
+      - name: Install Tools with asdf
+        uses: asdf-vm/actions/install@v1.1.0
+
+      - name: Run pre-commit checks
+        uses: pre-commit/action@v3.0.0
+
+      # We only check docs for now
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            can_apply:
+              - '**/*.md'
+
+      - name: Lint Docs
+        if: steps.filter.outputs.can_apply == 'true'
+        uses: github/super-linter@v4
+        env:
+          VALIDATE_ALL_CODEBASE: true
+          VALIDATE_MARKDOWN: true
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MARKDOWN_CONFIG_FILE: .markdownlint.yaml
+          LINTER_RULES_PATH: "."
