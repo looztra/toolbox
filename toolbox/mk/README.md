@@ -52,6 +52,8 @@ The remote/included mk files will be downloaded if:
       - name: Ensure remote mk targets are present
         run: |
           make init-mk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Tips
