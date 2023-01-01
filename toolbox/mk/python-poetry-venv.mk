@@ -106,9 +106,12 @@ poetry-lock: ## ▶ Update poetry lockfile
 
 .PHONY: update-requirements-file
 update-requirements-file: SHELL := $(WHICH_BASH)
-update-requirements-file: poetry-lock ## ▶ Generate requirements.txt from poetry
+update-requirements-file: ## ▶ Generate requirements.txt from poetry
 	@echo "+ $@"
 	@if [ -f pyproject.toml ]; then \
+		if [ ! -f poetry.lock ]; then \
+			poetry lock; \
+		fi; \
 		poetry export --format=requirements.txt --with dev --without-hashes --output=requirements.txt; \
 	else \
 		echo "No pyproject.toml file, skipping."; \
@@ -137,4 +140,3 @@ endif
 
 # .PHONY: update-all-requirements-files
 # update-all-requirements-files: update-requirements-file update-dev-requirements-file ## ▶ Update all requirements files
-
