@@ -2,7 +2,7 @@ POETRY_GUARD            := $(shell command -v poetry 2> /dev/null)
 VENV_DIR                ?= $(shell poetry env info --path)
 VENV_PYTHON3            := python3
 PYTHON3_GUARD           := $(shell command -v ${VENV_PYTHON3} 2> /dev/null)
-ifeq ($(VENV_DIR),)
+ifneq ($(VENV_DIR),)
 	VENV_EXISTS             := $(shell ls -d $(VENV_DIR) 2> /dev/null)
 endif
 VENV_ACTIVATED          := $(shell echo $(VIRTUAL_ENV) 2> /dev/null)
@@ -30,9 +30,9 @@ endif
 check-venv-exists: ## Check if venv is created 🙉
 	@echo "+ $@"
 ifdef VENV_EXISTS
-	$(error "no venv dir found, please create it first with 'make setup-venv'")
-else
 	@echo "Found venv at path '$(VENV_DIR)' (and that's a good news)"
+else
+	$(error "no venv dir found, please create it first with 'make setup-venv'")
 endif
 
 .PHONY: setup-venv
