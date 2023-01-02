@@ -104,32 +104,19 @@ poetry-lock: ## ▶ Update poetry lockfile
 	@echo "+ $@"
 	@poetry lock
 
+.PHONY: generate-requirements-file
+generate-requirements-file: ## ▶ Generare the requirements.txt file from poetry.lock reference
+	@echo "+ $@"
+	poetry export --format=requirements.txt --with dev --without-hashes --output=requirements.txt;
+
 .PHONY: update-requirements-file
 update-requirements-file: SHELL := $(WHICH_BASH)
-update-requirements-file: ## ▶ Generate requirements.txt from poetry
+update-requirements-file: poetry-lock generate-requirements-file ## ▶ Update dependencies (poetry.lock and requirements.txt)
 	@echo "+ $@"
-	@if [ -f pyproject.toml ]; then \
-		if [ ! -f poetry.lock ]; then \
-			poetry lock; \
-		fi; \
-		poetry export --format=requirements.txt --with dev --without-hashes --output=requirements.txt; \
-	else \
-		echo "No pyproject.toml file, skipping."; \
-	fi
 
-#.PHONY: update-dev-requirements-file
-#update-dev-requirements-file: SHELL := $(WHICH_BASH)
-#update-dev-requirements-file: poetry-lock ## ▶ Generate dev requirements.txt from poetry
-#	@echo "+ $@"
-#	@if [ -f pyproject.toml ]; then \
-#		poetry export --only=dev --format=requirements.txt --without-hashes --output=requirements_dev_only.txt;\
-#	else \
-#		echo "No requirements.in file, skipping."; \
-#	fi
-
-.PHONY: install-all-requirements
-install-all-requirements: SHELL := $(WHICH_BASH)
-install-all-requirements: ## ▶ Install all requirements in a single command (requires make install-requirements)
+.PHONY: install-requirements
+install-requirements: SHELL := $(WHICH_BASH)
+install-requirements: ## ▶ Install requirements in a single command
 	@echo "+ $@"
 ifeq ($(POETRY_INSTALL_SYNC_OPT),true)
 	$(eval POETRY_INSTALL_SYNC_OPT_STRING = --sync)
@@ -137,6 +124,3 @@ else
 	$(eval POETRY_INSTALL_SYNC_OPT_STRING = )
 endif
 	poetry install $(POETRY_INSTALL_SYNC_OPT_STRING)
-
-# .PHONY: update-all-requirements-files
-# update-all-requirements-files: update-requirements-file update-dev-requirements-file ## ▶ Update all requirements files
