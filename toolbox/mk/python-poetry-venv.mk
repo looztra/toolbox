@@ -4,6 +4,8 @@ VENV_PYTHON3            := python3
 PYTHON3_GUARD           := $(shell command -v ${VENV_PYTHON3} 2> /dev/null)
 ifneq ($(VENV_DIR),)
 	VENV_EXISTS             := $(shell ls -d $(VENV_DIR) 2> /dev/null)
+else
+	VENV_EXISTS             :=
 endif
 VENV_ACTIVATED          := $(shell echo $(VIRTUAL_ENV) 2> /dev/null)
 VENV_ACTIVATE_FISH_CMD  := source $(VENV_DIR)/bin/activate.fish
@@ -38,7 +40,7 @@ endif
 .PHONY: setup-venv
 setup-venv: check-python3 ## ▶ Setup a virtual env for running our python goodness 🎃
 	@echo "+ $@"
-ifdef VENV_EXISTS
+ifeq ($(VENV_DIR),)
 	@poetry install --sync
 else
 	@echo "Doing nothing, venv already setup at path [$(VENV_DIR)]"
