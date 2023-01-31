@@ -1,37 +1,45 @@
+POETRY_BINARY           := poetry
 POETRY_GUARD            := $(shell command -v poetry 2> /dev/null)
-VENV_DIR                ?= $(shell poetry env info --path)
+POETRY_IN_PROJECT_VENV  ?= $(shell grep in-project poetry.toml| sed "s/\s//g" | cut -d "=" -f2)
+ifeq ($(POETRY_IN_PROJECT_VENV),true)
+	VENV_DIR              ?= .venv
+else
+	VENV_DIR              ?= $(shell poetry env info --path)
+endif
+
 VENV_PYTHON3            := python3
 PYTHON3_GUARD           := $(shell command -v ${VENV_PYTHON3} 2> /dev/null)
 ifneq ($(VENV_DIR),)
-	VENV_EXISTS             := $(shell ls -d $(VENV_DIR) 2> /dev/null)
+	VENV_EXISTS           := $(shell ls -d $(VENV_DIR) 2> /dev/null)
 else
-	VENV_EXISTS             :=
+	VENV_EXISTS           :=
 endif
 VENV_ACTIVATED          := $(shell echo $(VIRTUAL_ENV) 2> /dev/null)
 VENV_ACTIVATE_FISH_CMD  := source $(VENV_DIR)/bin/activate.fish
 VENV_ACTIVATE_OTHER_CMD := source $(VENV_DIR)/bin/activate
 POETRY_INSTALL_SYNC_OPT := true
+POETRY_LOCK_OPTIONS     ?=
 
 .PHONY: check-poetry
 check-poetry: ## Check if poetry is installed 🐍
 	@echo "+ $@"
 ifndef POETRY_GUARD
-	$(error "python3 is not available please install it")
+	$(error "$(POETRY_BINARY) is not available please install it")
 endif
-	@echo "Found poetry at '${POETRY_GUARD}' (and that's a good news)"
+	@echo "Found $(POETRY_BINARY) at '${POETRY_GUARD}' (and that's a good news)"
 
 .PHONY: check-python3
 check-python3: ## Check if python3 is installed 🐍
 	@echo "+ $@"
 ifndef PYTHON3_GUARD
-	$(error "python3 is not available please install it")
+	$(error "$(VENV_PYTHON3) is not available please install it")
 endif
-	@echo "Found ${VENV_PYTHON3} (and that's a good news)"
+	@echo "Found $(VENV_PYTHON3) (and that's a good news)"
 
 .PHONY: check-venv-exists
 check-venv-exists: ## Check if venv is created 🙉
 	@echo "+ $@"
-ifdef VENV_EXISTS
+ifneq ($(VENV_EXISTS),)
 	@echo "Found venv at path '$(VENV_DIR)' (and that's a good news)"
 else
 	$(error "no venv dir found, please create it first with 'make setup-venv'")
@@ -40,7 +48,7 @@ endif
 .PHONY: setup-venv
 setup-venv: check-python3 ## ▶ Setup a virtual env for running our python goodness 🎃
 	@echo "+ $@"
-ifeq ($(VENV_DIR),)
+ifeq ($(VENV_EXISTS),)
 	@poetry install --sync
 else
 	@echo "Doing nothing, venv already setup at path [$(VENV_DIR)]"
@@ -104,12 +112,17 @@ exit-venv: check-venv-is-activated ## Exit venv (deactivate) 👋
 .PHONY: poetry-lock
 poetry-lock: ## ▶ Update poetry lockfile
 	@echo "+ $@"
-	@poetry lock
+	@poetry lock $(POETRY_LOCK_OPTIONS)
 
 .PHONY: generate-requirements-file
 generate-requirements-file: ## ▶ Generare the requirements.txt file from poetry.lock reference
 	@echo "+ $@"
 	poetry export --format=requirements.txt --with dev --without-hashes --output=requirements.txt;
+
+.PHONY: update-lock-file
+update-lock-file: POETRY_LOCK_OPTIONS := --no-update
+update-lock-file: poetry-lock ## ▶ Update lock file
+	@echo "+ $@"
 
 .PHONY: update-requirements-file
 update-requirements-file: SHELL := $(WHICH_BASH)
