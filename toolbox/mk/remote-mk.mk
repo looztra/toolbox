@@ -8,7 +8,6 @@ REMOTE_MK_DIR   ?= toolbox/mk
 # $2: mk file sha256 signature
 # $3: git ref
 define get_remote_mk
-	@echo "+ retreiving $@"
 	@mkdir -p $(LOCAL_MK_CACHE)
 	@GITHUB_API_TOKEN=$${GITHUB_API_TOKEN:-$$GITHUB_TOKEN}; \
 	if [ -z "$${GITHUB_API_TOKEN}" ]; then \
@@ -24,6 +23,21 @@ define get_remote_mk
 		mv $(LOCAL_MK_CACHE)/$(1).fetched.mk $(LOCAL_MK_CACHE)/$(1).mk
 endef
 
+# $1: mk target without .mk extension
+define get_remote_mk_wrapper
+	$(eval MK_NAME = $(1))
+	@echo "Working on remote mk [$(MK_NAME).mk]"
+	$(eval MK_NAME_UPPER = $(shell echo $(MK_NAME) | tr '[:lower:]' '[:upper:]' | tr '-' '_'))
+	$(eval MK_SHA256_VAR_NAME= MK_$(MK_NAME_UPPER)_SHA256)
+	$(eval MK_SHA256_VALUE = $($(MK_SHA256_VAR_NAME)))
+	@if [ -z "$(MK_SHA256_VALUE)" ]; then \
+		echo -e "\e[31m**ERROR** Cannot find the SHA256 signature for remote mk [$(MK_NAME)], please define variable [$(MK_SHA256_VAR_NAME)]\e[0m"; \
+		echo; \
+		exit 1; \
+	fi
+	$(call get_remote_mk,$(MK_NAME),$(MK_SHA256_VALUE),$(MK_GIT_REF))
+endef
+
 .PHONY: check-sha256sum
 check-sha256sum: ## Check if sha256sum is installed 🙉
 	@echo "+ $@"
@@ -33,7 +47,7 @@ endif
 
 
 .PHONY: init-mk
-init-mk: check-sha256sum ## ▶ no-op target to make sure all remote targets are downloaded
+init-mk:: check-sha256sum ## ▶ no-op target to make sure all remote targets are downloaded
 	@echo "+ $@"
 
 .PHONY: clear-mk-cache
@@ -45,13 +59,4 @@ clear-mk-cache: ## ▶ Clear make target cache
 $(LOCAL_MK_CACHE)/%.mk: SHELL := $(WHICH_BASH_)
 $(LOCAL_MK_CACHE)/%.mk: Makefile
 	$(eval MK_NAME = $(shell echo $@ | cut -d "/" -f3 | cut -d "." -f1))
-	@echo "Working on remote mk [$(MK_NAME)]"
-	$(eval MK_NAME_UPPER = $(shell echo $(MK_NAME) | tr '[:lower:]' '[:upper:]' | tr '-' '_'))
-	$(eval MK_SHA256_VAR_NAME= MK_$(MK_NAME_UPPER)_SHA256)
-	$(eval MK_SHA256_VALUE = $($(MK_SHA256_VAR_NAME)))
-	@if [ -z "$(MK_SHA256_VALUE)" ]; then \
-		echo -e "\e[31m**ERROR** Cannot find the SHA256 signature for remote mk [$(MK_NAME)], please define variable [$(MK_SHA256_VAR_NAME)]\e[0m"; \
-		echo; \
-		exit 1; \
-	fi
-	$(call get_remote_mk,$(MK_NAME),$(MK_SHA256_VALUE),$(MK_GIT_REF))
+	$(call get_remote_mk_wrapper,$(MK_NAME))
