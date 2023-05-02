@@ -37,14 +37,14 @@ style: SHELL := $(WHICH_BASH)
 style: check-venv-is-ready ## ▶ force style with black and isort
 	@echo "+ $@"
 	@echo "Enforce code format with black"
-	@black --line-length 119 .
+	@poetry run black  .
 	@echo "Ordering import with isort..."
-	@isort --line-width 119 --dont-order-by-type --profile black .
+	@poetry run isort .
 	@echo "🦾 Done!"
 
 .PHONY: lint
 lint: SHELL := $(WHICH_BASH)
-lint: check-venv-is-ready # ▶ Run tox -e linters
+lint: check-venv-is-ready ## ▶ Run tox -e linters
 	@echo "+ $@"
 	@declare -a tox_args=(); \
 	if [ -n "$(TOX_ARGS)" ]; then \
