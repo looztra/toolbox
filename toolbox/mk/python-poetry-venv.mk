@@ -1,5 +1,5 @@
 POETRY_BINARY           := poetry
-POETRY_GUARD            := $(shell command -v poetry 2> /dev/null)
+POETRY_GUARD            := $(shell command -v $(POETRY_BINARY) 2> /dev/null)
 POETRY_IN_PROJECT_VENV  ?= $(shell grep in-project poetry.toml| sed "s/\s//g" | cut -d "=" -f2)
 ifeq ($(POETRY_IN_PROJECT_VENV),true)
 	VENV_DIR              ?= .venv
@@ -69,6 +69,7 @@ delete-venv: ## ▶ Delete venv
 venv: setup-venv
 
 .PHONY: activate-venv
+activate-venv: SHELL := $(WHICH_BASH)
 activate-venv: check-python3 check-venv-exists ## Activate venv for the current shell ✨
 	@echo "+ $@"
 	@echo "Activating venv for shell [$(CURRENT_SHELL)]"
@@ -91,7 +92,7 @@ echo-venv-activate-cmd: ## ▶ Echo the command to use to activate the venv
 	fi
 
 .PHONY: check-venv-is-ready
-check-venv-is-ready: ## Check if venv is ready
+check-venv-is-ready: check-venv-is-activated ## Check if venv is ready
 	echo "+ $@"
 
 .PHONY: check-venv-is-activated
@@ -115,9 +116,13 @@ poetry-lock: ## ▶ Update poetry lockfile
 	@poetry lock $(POETRY_LOCK_OPTIONS)
 
 .PHONY: generate-requirements-file
-generate-requirements-file: ## ▶ Generare the requirements.txt file from poetry.lock reference
+generate-requirements-file: generate-requirements-files ## Generare the requirements.txt file from poetry.lock reference
+
+.PHONY: generate-requirements-files
+generate-requirements-files: ## ▶ Generare the requirements.txt file from poetry.lock reference
 	@echo "+ $@"
-	poetry export --format=requirements.txt --with dev --without-hashes --output=requirements.txt;
+	poetry export --format=requirements.txt --without-hashes --output=requirements.txt;
+	poetry export --format=requirements.txt --with dev --without-hashes --output=requirements_dev.txt;
 
 .PHONY: update-lock-file
 update-lock-file: POETRY_LOCK_OPTIONS := --no-update
@@ -125,8 +130,7 @@ update-lock-file: poetry-lock ## ▶ Update lock file
 	@echo "+ $@"
 
 .PHONY: update-requirements-file
-update-requirements-file: SHELL := $(WHICH_BASH)
-update-requirements-file: poetry-lock generate-requirements-file ## ▶ Update dependencies (poetry.lock and requirements.txt)
+update-requirements-file: poetry-lock generate-requirements-files ## ▶ Update dependencies (poetry.lock and requirements*.txt)
 	@echo "+ $@"
 
 .PHONY: install-requirements
