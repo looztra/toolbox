@@ -8,7 +8,7 @@ mdlint: check-docker ## ▶ Run markdownlint-cli2 on current directory and sub-d
 		echo "No '.markdownlint-cli2.yaml' file found, so default globs will be used, see <https://github.com/DavidAnson/markdownlint-cli2/tree/main#markdownlint-cli2jsonc>"; \
 	fi
 	@docker container run \
-		--rm \
+		-ti --rm \
 		-w /app/code \
 		-v $(PWD):/app/code \
 		$(MDLINT_CLI_DOCKER_IMAGE)
@@ -21,7 +21,7 @@ mdlint-fix: check-docker ## ▶ Run markdownlint-cli2 fix on current directory a
 		echo "No '.markdownlint-cli2.yaml' file found, so default globs will be used, see <https://github.com/DavidAnson/markdownlint-cli2/tree/main#markdownlint-cli2jsonc>"; \
 	fi
 	@docker container run \
-		--rm \
+		-ti --rm \
 		-w /app/code \
 		-v $(PWD):/app/code \
 		--entrypoint="markdownlint-cli2-fix" \
